@@ -1,0 +1,5 @@
+{
+  "devDependencies": {
+    "typed-htmx": "^0.3.1"
+  }
+}
