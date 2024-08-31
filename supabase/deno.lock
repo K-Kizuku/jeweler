@@ -1,0 +1,72 @@
+{
+  "version": "3",
+  "packages": {
+    "specifiers": {
+      "jsr:@hono/hono": "jsr:@hono/hono@4.5.10",
+      "jsr:@hono/hono@^4.4.12": "jsr:@hono/hono@4.5.10",
+      "jsr:@nik-kita/hono-zod-middleware-monkey-patch": "jsr:@nik-kita/hono-zod-middleware-monkey-patch@1.0.0",
+      "jsr:@open-schemas/zod": "jsr:@open-schemas/zod@2.0.0",
+      "jsr:@prgm/zod@3.23.8-alpha.1": "jsr:@prgm/zod@3.23.8-alpha.1",
+      "npm:@hono/zod-validator": "npm:@hono/zod-validator@0.2.2_hono@4.5.10_zod@3.23.8",
+      "npm:hono@latest": "npm:hono@4.5.10",
+      "npm:typed-htmx@^0.3.1": "npm:typed-htmx@0.3.1",
+      "npm:zod@latest": "npm:zod@3.23.8"
+    },
+    "jsr": {
+      "@hono/hono@4.5.10": {
+        "integrity": "801fe47e233b53480322f7a17c621ceb5e9b4335e5fdc14cfc0c7696e8396c34"
+      },
+      "@hono/hono@4.5.9": {
+        "integrity": "47f561e67aedbd6d1e21e3a1ae26c1b80ffdb62a51c161d502e75bee17ca40af"
+      },
+      "@nik-kita/hono-zod-middleware-monkey-patch@1.0.0": {
+        "integrity": "58887bcd9beadc40b9ca3e3290154a5e3484eacfc1b9aca9da5d0811e5ad4826",
+        "dependencies": [
+          "jsr:@hono/hono@^4.4.12",
+          "npm:hono@latest",
+          "npm:zod@latest"
+        ]
+      },
+      "@open-schemas/zod@2.0.0": {
+        "integrity": "0f2efa6f89043bb4f0be5e1465288f062c561b8a9df84b8835427d7eb07b15ee"
+      },
+      "@prgm/zod@3.23.8-alpha.1": {
+        "integrity": "c840bb3de736dee55340c3083506e22724255b094b1a84d7c54b47bdf319aa0f"
+      }
+    },
+    "npm": {
+      "@hono/zod-validator@0.2.2_hono@4.5.10_zod@3.23.8": {
+        "integrity": "sha512-dSDxaPV70Py8wuIU2QNpoVEIOSzSXZ/6/B/h4xA7eOMz7+AarKTSGV8E6QwrdcCbBLkpqfJ4Q2TmBO0eP1tCBQ==",
+        "dependencies": {
+          "hono": "hono@4.5.10",
+          "zod": "zod@3.23.8"
+        }
+      },
+      "hono@4.5.10": {
+        "integrity": "sha512-az6tdU1U8o/l0v8O37FIQuc+ER/TeD9vHt/qs8JnBDgMxw6Zu5L2AixUyHeXZNcu87r7iYo8Ey85R7IogOINKA==",
+        "dependencies": {}
+      },
+      "typed-html@3.0.1": {
+        "integrity": "sha512-JKCM9zTfPDuPqQqdGZBWSEiItShliKkBFg5c6yOR8zth43v763XkAzTWaOlVqc0Y6p9ee8AaAbipGfUnCsYZUA==",
+        "dependencies": {}
+      },
+      "typed-htmx@0.3.1": {
+        "integrity": "sha512-6WSPsukTIOEMsVbx5wzgVSvldLmgBUVcFIm2vJlBpRPtcbDOGC5y1IYrCWNX1yUlNsrv1Ngcw4gGM8jsPyNV7w==",
+        "dependencies": {
+          "typed-html": "typed-html@3.0.1"
+        }
+      },
+      "zod@3.23.8": {
+        "integrity": "sha512-XBx9AXhXktjUqnepgTiE5flcKIYWi/rme0Eaj+5Y0lftuGBq+jyRu/md4WnuxqgP1ubdpNCsYEYPxrzVHD8d6g==",
+        "dependencies": {}
+      }
+    }
+  },
+  "redirects": {
+    "https://cdn.skypack.dev/new/zod@v3.23.8/dist=es2019": "https://cdn.skypack.dev/error/build:zod@v3.23.8-07yem4v67JRURwIbJ6iX",
+    "https://cdn.skypack.dev/zod": "https://cdn.skypack.dev/new/zod@v3.23.8/dist=es2019"
+  },
+  "remote": {
+    "https://cdn.skypack.dev/error/build:zod@v3.23.8-07yem4v67JRURwIbJ6iX": "c26eeafcaf352da37092d2e0bc5176caf6790f77f95672adfea8073c1f5a6ae3"
+  }
+}
