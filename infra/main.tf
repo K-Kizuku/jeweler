@@ -52,6 +52,22 @@ resource "aws_s3_bucket_website_configuration" "static_site_bucket" {
   depends_on = [aws_s3_bucket.jeweler_kizuku]
 }
 
+resource "aws_s3_bucket_policy" "jeweler_kizuku_policy" {
+  bucket = aws_s3_bucket.jeweler_kizuku.id
+
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Effect = "Allow"
+        Principal = "*"
+        Action   = "s3:GetObject"
+        Resource = "${aws_s3_bucket.jeweler_kizuku.arn}/*"
+      }
+    ]
+  })
+}
+
 # Lambda用のIAMロール作成
 resource "aws_iam_role" "lambda_role" {
   name = "lambda_role"
@@ -75,11 +91,37 @@ resource "aws_lambda_function" "lambda_function" {
   role             = aws_iam_role.lambda_role.arn
   handler          = var.lambda_handler
   runtime          = var.lambda_runtime
+  timeout          = 15
   environment {
     variables = {
       BUCKET_NAME = aws_s3_bucket_website_configuration.static_site_bucket.bucket
     }
   }
+}
+
+resource "aws_iam_role_policy" "lambda_s3_policy" {
+  name   = "lambda_s3_policy"
+  role   = aws_iam_role.lambda_role.id
+
+  policy = jsonencode({
+    Version = "2012-10-17",
+    Statement = [
+      {
+        Effect   = "Allow",
+        Action   = [
+          "s3:ListBucket"
+        ],
+        Resource = "arn:aws:s3:::jeweler-storage"  # バケット自体へのアクセス
+      },
+      {
+        Effect   = "Allow",
+        Action   = [
+          "s3:GetObject"
+        ],
+        Resource = "arn:aws:s3:::jeweler-storage/*"  # バケット内のオブジェクトへのアクセス
+      }
+    ]
+  })
 }
 
 # API Gatewayの設定
@@ -119,8 +161,9 @@ resource "aws_lambda_permission" "apigw_lambda" {
   statement_id  = "AllowAPIGatewayInvoke"
   action        = "lambda:InvokeFunction"
   function_name = aws_lambda_function.lambda_function.function_name
-  principal     = "apigateway.amazonaws.com"
-  source_arn    = "${aws_api_gateway_rest_api.api.execution_arn}/*/*"
+  principal     = "*"
+  # principal     = "apigateway.amazonaws.com"
+  # source_arn    = "${aws_api_gateway_rest_api.api.execution_arn}/*/*"
 }
 
 # CloudFrontディストリビューションの作成
@@ -141,6 +184,10 @@ resource "aws_cloudfront_distribution" "api_distribution" {
   is_ipv6_enabled     = true
   default_root_object = ""
 
+   logging_config {
+      bucket          = "jeweler-storage.s3.amazonaws.com"
+      include_cookies = true
+   }
   default_cache_behavior {
     allowed_methods  = ["GET", "HEAD", "OPTIONS"]
     cached_methods   = ["GET", "HEAD"]
@@ -162,7 +209,9 @@ resource "aws_cloudfront_distribution" "api_distribution" {
   }
 
   viewer_certificate {
-    cloudfront_default_certificate = true
+    acm_certificate_arn      = var.cloudfront_certificate_arn
+    ssl_support_method       = "sni-only"
+    minimum_protocol_version = "TLSv1.2_2021"
   }
 
   restrictions {
@@ -176,8 +225,48 @@ resource "aws_cloudfront_distribution" "api_distribution" {
   }
 }
 
-# Outputs
-output "cloudfront_distribution_domain_name" {
-  value       = aws_cloudfront_distribution.api_distribution.domain_name
-  description = "The domain name of the CloudFront distribution"
+# Route 53 ホストゾーンの参照
+# data "aws_route53_zone" "selected" {
+#   name         = "kizuku-hackathon.work."  # ドメイン名を指定
+#   private_zone = false
+# }
+
+# # ワイルドカードCNAMEレコードの作成
+# resource "aws_route53_record" "wildcard_subdomain" {
+#   zone_id = data.aws_route53_zone.selected.zone_id
+#   name    = "*.kizuku-hackathon.work"  # ワイルドカードサブドメイン
+#   type    = "CNAME"
+#   ttl     = 300
+
+#   records = [aws_api_gateway_rest_api.api.execution_arn]  # API Gatewayのエンドポイントを指定
+# }
+
+# resource "aws_acm_certificate" "cert" {
+#   domain_name       = "*.kizuku-hackathon.work"
+#   validation_method = "DNS"
+
+#   lifecycle {
+#     create_before_destroy = true
+#   }
+
+#   # Validation 設定
+#   domain_validation_options {
+#     domain_name       = "*.kizuku-hackathon.work"
+#     validation_domain = "kizuku-hackathon.work"
+#   }
+# }
+
+
+# カスタムドメインの作成
+resource "aws_api_gateway_domain_name" "custom_domain" {
+  domain_name = "*.kizuku-hackathon.work"
+  certificate_arn = "arn:aws:acm:us-east-1:366344796855:certificate/efbb3bf7-e869-4b7f-829f-32e7d712ce4b"
 }
+
+# API Gateway のステージマッピング
+resource "aws_api_gateway_base_path_mapping" "mapping" {
+  domain_name = aws_api_gateway_domain_name.custom_domain.domain_name
+  api_id = aws_api_gateway_rest_api.api.id
+  stage_name  = "prod"
+}
+

@@ -13,7 +13,7 @@ COPY go.sum .
 RUN go mod download
 
 COPY . .
-RUN go build -o api cmd/main.go
+RUN go build -o api main.go
 
 # --------------------------------------------
 
@@ -31,17 +31,25 @@ COPY . .
 
 # --------------------------------------------
 
-FROM alpine:${ALPINE_VERSION}
+FROM node:${NODE_VERSION}-alpine
 
 WORKDIR /usr/src/jeweler
 
 COPY --from=go-builder /go/src/jeweler/api api
-COPY --from=go-builder /go/src/jeweler/.env .env
+COPY .env .env
 RUN chmod +x "/usr/src/jeweler/api"
+
+# 環境変数読み込み
+RUN export $(grep -v '^#' /usr/src/jeweler/.env | xargs)
+
+RUN npm install -g pnpm@${PNPM_VERSION}
 
 COPY --from=pnpm-setup /usr/local/bin/pnpm /usr/local/bin/pnpm
 COPY --from=pnpm-setup /usr/src/jeweler/node_modules ./node_modules
 COPY --from=pnpm-setup /usr/src/jeweler/package.json ./package.json
 COPY --from=pnpm-setup /usr/src/jeweler/pnpm-lock.yaml ./pnpm-lock.yaml
+COPY jeweler .
+
+EXPOSE 8080
 
 ENTRYPOINT ["/usr/src/jeweler/api"]

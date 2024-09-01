@@ -1,7 +1,7 @@
-const AWS = require("aws-sdk");
-const s3 = new AWS.S3();
+import { S3Client } from "@aws-sdk/client-s3";
+const s3 = new S3Client({ region: "us-west-2" });
 
-exports.handler = async (event) => {
+export const handler = async (event) => {
   const request = event.Records[0].cf.request;
   const subdomain = request.headers.host[0].value.split(".")[0];
   const key = `${subdomain}${request.uri}`;

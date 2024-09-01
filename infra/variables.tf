@@ -25,7 +25,7 @@ variable "lambda_handler" {
 
 variable "lambda_runtime" {
   description = "Lambda function runtime"
-  default     = "nodejs18.x"
+  default     = "nodejs20.x"
 }
 
 variable "cloudfront_certificate_arn" {

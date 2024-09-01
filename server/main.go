@@ -1,58 +1,54 @@
 package main
 
 import (
+	"context"
 	"fmt"
+	"log"
+	"net/http"
 	"os"
 	"os/exec"
 	"path/filepath"
 
-	"github.com/aws/aws-sdk-go/aws"
-	"github.com/aws/aws-sdk-go/aws/session"
-	"github.com/aws/aws-sdk-go/service/s3"
+	"github.com/aws/aws-sdk-go-v2/aws"
+	"github.com/aws/aws-sdk-go-v2/config"
+	"github.com/aws/aws-sdk-go-v2/service/s3"
 )
 
 func main() {
 	projectDir := "./jeweler"
-	cmd := exec.Command("pnpm", "run", "build")
-	cmd.Dir = projectDir
-
-	cmd.Stdout = os.Stdout
-	cmd.Stderr = os.Stderr
-
-	err := cmd.Run()
+	ctx := context.Background()
+	fmt.Println("hey")
+	cfg, err := config.LoadDefaultConfig(ctx)
 	if err != nil {
-		fmt.Printf("Failed to build the React project: %v\n", err)
-		os.Exit(1)
+		fmt.Println("Failed to Load Credentials")
 	}
+	client := s3.NewFromConfig(cfg)
 
-	fmt.Println("React project built successfully!")
+	mux := http.NewServeMux()
+	mux.HandleFunc("/{id}", func(w http.ResponseWriter, r *http.Request) {
+		id := r.PathValue("id")
+		if err := buildReactProject(projectDir); err != nil {
+			fmt.Printf("Failed to build React project: %v\n", err)
+		}
 
-	// AWS S3にアップロード
-	buildDir := filepath.Join(projectDir, "build")
-	err = uploadDirToS3(buildDir, "jeweler-storage")
-	if err != nil {
-		fmt.Printf("Failed to upload to S3: %v\n", err)
-		os.Exit(1)
-	}
+		buildDir := filepath.Join(projectDir, "dist")
 
-	fmt.Println("Files uploaded to S3 successfully!")
+		if err := uploadDirToS3(ctx, client, buildDir, id, "jeweler-storage"); err != nil {
+			fmt.Printf("Failed to upload to S3: %v\n", err)
+		}
+		fmt.Println("Files uploaded to S3 successfully!")
+		fmt.Fprint(w, "OK")
+	})
+
+	log.Fatal(http.ListenAndServe(":8080", mux))
+
 }
 
-func uploadDirToS3(dir, bucket string) error {
-	sess, err := session.NewSession(&aws.Config{
-		Region: aws.String("us-west-2"),
-	})
-	if err != nil {
-		return err
-	}
-
-	s3svc := s3.New(sess)
-
-	err = filepath.Walk(dir, func(path string, info os.FileInfo, err error) error {
+func uploadDirToS3(ctx context.Context, client *s3.Client, dir, name, bucket string) error {
+	err := filepath.Walk(dir, func(path string, info os.FileInfo, err error) error {
 		if err != nil {
 			return err
 		}
-
 		if !info.IsDir() {
 			file, err := os.Open(path)
 			if err != nil {
@@ -60,18 +56,27 @@ func uploadDirToS3(dir, bucket string) error {
 			}
 			defer file.Close()
 
-			_, err = s3svc.PutObject(&s3.PutObjectInput{
+			_, err = client.PutObject(ctx, &s3.PutObjectInput{
 				Bucket: aws.String(bucket),
-				Key:    aws.String(path[len(dir)+1:]), // S3内のパス
+				Key:    aws.String(name), // S3内のパス
 				Body:   file,
 			})
 			if err != nil {
 				return err
 			}
 		}
-
 		return nil
 	})
 
 	return err
+}
+
+func buildReactProject(dir string) error {
+	cmd := exec.Command("pnpm", "run", "build")
+	cmd.Dir = dir
+
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
+
+	return cmd.Run()
 }
